@@ -76,11 +76,14 @@ struct integrate_functor
             vel.x *= params.boundaryDamping;
         }
 
-        if (pos.y > 1.0f - params.particleRadius)
+		/*
+		if (pos.y > 1.0f - params.particleRadius)
         {
             pos.y = 1.0f - params.particleRadius;
             vel.y *= params.boundaryDamping;
         }
+		*/
+        
 
         if (pos.z > 1.0f - params.particleRadius)
         {
@@ -101,11 +104,46 @@ struct integrate_functor
             pos.y = -1.0f + params.particleRadius;
             vel.y *= params.boundaryDamping;
         }
+		
 
         // store new position and velocity
         thrust::get<0>(t) = make_float4(pos, posData.w);
         thrust::get<1>(t) = make_float4(vel, velData.w);
     }
+};
+
+/***********
+* new code *
+************/
+// calculate potential force in given position
+struct forceField_functor {
+
+	__host__ __device__
+	forceField_functor() {}
+
+	template <typename Tuple>
+	__device__
+		void operator()(Tuple t)
+	{
+		volatile float4 posData = thrust::get<0>(t);
+		volatile float4 velData = thrust::get<1>(t);
+		float3 pos = make_float3(posData.x, posData.y, posData.z);
+		float3 vel = make_float3(velData.x, velData.y, velData.z);
+
+		// apply force in given position
+		float3 up = make_float3(0.0f, 0.0008f, 0.0f);
+		float2 xzpos = make_float2(pos.x, pos.z);
+		float2 center = make_float2(0.0f, 0.0f);
+		float dist = length(xzpos - center);
+		if (pos.y < 0.5f & dist < 0.1f)
+		{
+			vel += up;
+		}
+
+		// store new position and velocity
+		thrust::get<0>(t) = make_float4(pos, posData.w);
+		thrust::get<1>(t) = make_float4(vel, velData.w);
+	}
 };
 
 // calculate position in uniform grid
@@ -342,6 +380,36 @@ void collideD(float4 *newVel,               // output: new velocity
     // write new velocity back to original unsorted location
     uint originalIndex = gridParticleIndex[index];
     newVel[originalIndex] = make_float4(vel + force, 0.0f);
+}
+
+
+
+__global__
+void forceFieldD(float4 *newVel,               // output: new velocity
+				 float4 *oldPos,               // input: sorted positions
+				 float4 *oldVel,               // input: sorted velocities
+				 uint   *gridParticleIndex,
+				 uint    numParticles)
+{
+	uint index = __mul24(blockIdx.x, blockDim.x) + threadIdx.x;
+
+	if (index >= numParticles) return;
+
+	// read particle data from sorted arrays
+	float3 pos = make_float3(FETCH(oldPos, index));
+	float3 vel = make_float3(FETCH(oldVel, index));
+
+	// examine neighbouring cells
+	float3 force = make_float3(0.0f);
+
+	// apply force field
+	//force += function_that_returns_force_at_given_position(pos);
+	float3 temp = make_float3(0.0f, 0.0006f, 0.0f);
+	force += temp;
+
+	// write new velocity back to original unsorted location
+	uint originalIndex = gridParticleIndex[index];
+	//newVel[originalIndex] = make_float4(vel + force, 0.0f);
 }
 
 #endif

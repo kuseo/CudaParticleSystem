@@ -56,10 +56,10 @@ ParticleSystem::ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenG
     m_params.numBodies = m_numParticles;
 
     m_params.particleRadius = 1.0f / 64.0f;
-    m_params.colliderPos = make_float3(-1.2f, -0.8f, 0.8f);
+	m_params.colliderPos = make_float3(-1.2f, -0.8f, 0.8f);
     m_params.colliderRadius = 0.2f;
 
-    m_params.worldOrigin = make_float3(-1.0f, -1.0f, -1.0f);
+	m_params.worldOrigin = make_float3(-1.0f, -1.0f, -1.0f);
     //    m_params.cellSize = make_float3(worldSize.x / m_gridSize.x, worldSize.y / m_gridSize.y, worldSize.z / m_gridSize.z);
     float cellSize = m_params.particleRadius * 2.0f;  // cell size equal to particle diameter
     m_params.cellSize = make_float3(cellSize, cellSize, cellSize);
@@ -261,6 +261,15 @@ ParticleSystem::update(float deltaTime)
         deltaTime,
         m_numParticles);
 
+	// calculate potential force
+	/*
+	
+	*/
+	calcForceField(
+		dPos,
+		m_dVel,
+		m_numParticles);
+
     // calculate grid hash
     calcHash(
         m_dGridParticleHash,
@@ -285,6 +294,7 @@ ParticleSystem::update(float deltaTime)
         m_numParticles,
         m_numGridCells);
 
+
     // process collisions
     collide(
         m_dVel,
@@ -295,6 +305,7 @@ ParticleSystem::update(float deltaTime)
         m_dCellEnd,
         m_numParticles,
         m_numGridCells);
+
 
     // note: do unmap at end here to avoid unnecessary graphics/CUDA context switch
     if (m_bUseOpenGL)
@@ -410,7 +421,7 @@ inline float frand()
 void
 ParticleSystem::initGrid(uint *size, float spacing, float jitter, uint numParticles)
 {
-    srand(1973);
+    srand(2016);
 
     for (uint z=0; z<size[2]; z++)
     {

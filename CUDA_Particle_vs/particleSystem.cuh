@@ -33,6 +33,10 @@ extern "C"
                          float deltaTime,
                          uint numParticles);
 
+	void calcForceField(float *pos,
+						float *vel,
+						uint  numParticles);
+
     void calcHash(uint  *gridParticleHash,
                   uint  *gridParticleIndex,
                   float *pos,
@@ -57,6 +61,7 @@ extern "C"
                  uint  *cellEnd,
                  uint   numParticles,
                  uint   numCells);
+	
 
     void sortParticles(uint *dGridParticleHash, uint *dGridParticleIndex, uint numParticles);
 

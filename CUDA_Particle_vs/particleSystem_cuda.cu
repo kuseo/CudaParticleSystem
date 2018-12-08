@@ -136,11 +136,24 @@ extern "C"
         thrust::device_ptr<float4> d_pos4((float4 *)pos);
         thrust::device_ptr<float4> d_vel4((float4 *)vel);
 
-        thrust::for_each(
+		thrust::for_each(
             thrust::make_zip_iterator(thrust::make_tuple(d_pos4, d_vel4)),
             thrust::make_zip_iterator(thrust::make_tuple(d_pos4+numParticles, d_vel4+numParticles)),
             integrate_functor(deltaTime));
     }
+
+	void calcForceField(float *pos,
+						float *vel,
+						uint  numParticles)
+	{
+		thrust::device_ptr<float4> d_pos4((float4 *)pos);
+		thrust::device_ptr<float4> d_vel4((float4 *)vel);
+
+		thrust::for_each(
+			thrust::make_zip_iterator(thrust::make_tuple(d_pos4, d_vel4)),
+			thrust::make_zip_iterator(thrust::make_tuple(d_pos4 + numParticles, d_vel4 + numParticles)),
+			forceField_functor());
+	}
 
     void calcHash(uint  *gridParticleHash,
                   uint  *gridParticleIndex,
