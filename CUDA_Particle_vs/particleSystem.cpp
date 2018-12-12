@@ -181,8 +181,15 @@ ParticleSystem::_initialize(int numParticles)
             *ptr++ = rand() / (float) RAND_MAX;
             *ptr++ = rand() / (float) RAND_MAX;
 #else
-            colorRamp(t, ptr);
+			*ptr++ = 0.8f;
+			*ptr++ = 0.8f;
+			*ptr++ = 0.8f;
+            
+			/*
+			colorRamp(t, ptr);
             ptr+=3;
+			*/
+			
 #endif
             *ptr++ = 1.0f;
         }

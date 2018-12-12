@@ -35,6 +35,7 @@ class ParticleRenderer
         void display(DisplayMode mode = PARTICLE_POINTS);
         void displayGrid();
 
+
         void setPointSize(float size)
         {
             m_pointSize = size;
@@ -57,6 +58,11 @@ class ParticleRenderer
         void _initGL();
         void _drawPoints();
         GLuint _compileProgram(const char *vsource, const char *fsource);
+		/***********
+		* new code *
+		************/
+		void initTexture();
+		void initSkyBox();
 
     protected: // data
         float *m_pos;
@@ -68,9 +74,12 @@ class ParticleRenderer
         int m_window_w, m_window_h;
 
         GLuint m_program;
+		GLuint skybox_program;
 
         GLuint m_vbo;
         GLuint m_colorVBO;
+		GLuint textureID;
+		GLuint skyboxID;
 };
 
 #endif //__ RENDER_PARTICLES__

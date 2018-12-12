@@ -11,3 +11,6 @@
 
 extern const char *vertexShader;
 extern const char *spherePixelShader;
+
+extern const char *skyBoxVertexShader;
+extern const char *skyBoxPixelShader;

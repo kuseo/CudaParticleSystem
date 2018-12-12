@@ -11,44 +11,80 @@
 
 #define STRINGIFY(A) #A
 
-// vertex shader
+
+ // vertex shader for object
 const char *vertexShader = STRINGIFY(
-                               uniform float pointRadius;  // point size in world space
-                               uniform float pointScale;   // scale to calculate size in pixels
-                               uniform float densityScale;
-                               uniform float densityOffset;
-                               void main()
+	uniform float pointRadius;  // point size in world space
+	uniform float pointScale;   // scale to calculate size in pixels
+	uniform float densityScale;
+	uniform float densityOffset;
+void main()
 {
-    // calculate window-space point size
-    vec3 posEye = vec3(gl_ModelViewMatrix * vec4(gl_Vertex.xyz, 1.0));
-    float dist = length(posEye);
-    gl_PointSize = pointRadius * (pointScale / dist);
+	// calculate window-space point size
+	vec3 posEye = vec3(gl_ModelViewMatrix * vec4(gl_Vertex.xyz, 1.0));
+	float dist = length(posEye);
+	gl_PointSize = pointRadius * (pointScale / dist);
 
-    gl_TexCoord[0] = gl_MultiTexCoord0;
-    gl_Position = gl_ModelViewProjectionMatrix * vec4(gl_Vertex.xyz, 1.0);
+	gl_TexCoord[0] = gl_MultiTexCoord0;
+	gl_Position = gl_ModelViewProjectionMatrix * vec4(gl_Vertex.xyz, 1.0);
 
-    gl_FrontColor = gl_Color;
+	//gl_FrontColor = gl_Color;
 }
-                           );
+);
 
 // pixel shader for rendering points as shaded spheres
 const char *spherePixelShader = STRINGIFY(
-                                    void main()
+	uniform sampler2D tex;
+void main()
 {
-    const vec3 lightDir = vec3(0.577, 0.577, 0.577);
+	const vec3 lightDir = vec3(0.577, 0.577, 0.577);
 
-    // calculate normal from texture coordinates
-    vec3 N;
-    N.xy = gl_TexCoord[0].xy*vec2(2.0, -2.0) + vec2(-1.0, 1.0);
-    float mag = dot(N.xy, N.xy);
+	// calculate normal from texture coordinates
+	vec3 N;
+	N.xy = gl_TexCoord[0].xy*vec2(2.0, -2.0) + vec2(-1.0, 1.0);
+	float mag = dot(N.xy, N.xy);
 
-    if (mag > 1.0) discard;   // kill pixels outside circle
+	vec2 texCoord = gl_TexCoord[0].st;
+	vec3 color = texture2D(tex, texCoord.st).rgb;
 
-    N.z = sqrt(1.0-mag);
+	if ((mag > 1.0)) discard;   // kill pixels outside circle
 
-    // calculate lighting
-    float diffuse = max(0.0, dot(lightDir, N));
+	N.z = sqrt(1.0 - mag);
 
-    gl_FragColor = gl_Color * diffuse;
+	// calculate lighting
+	float diffuse = max(0.0, dot(lightDir, N));
+
+	gl_FragColor = vec4(color * diffuse, 1.0f);
+}
+);
+
+
+
+// vertex shader for skybox
+const char *skyBoxVertexShader = STRINGIFY(
+	layout(location = 0) in vec3 aPos;
+
+	out vec3 TexCoords;
+
+	uniform mat4 projection;
+	uniform mat4 view;
+                               void main()
+{
+	TexCoords = aPos;
+	vec4 pos = projection * view * vec4(aPos, 1.0);
+	gl_Position = pos.xyww;
+}
+                           );
+
+// pixel shader for skybox
+const char *skyBoxPixelShader = STRINGIFY(
+                                    void main()
+	out vec4 FragColor;
+
+	in vec3 TexCoords;
+
+	uniform samplerCube skybox;
+{
+	FragColor = texture(skybox, TexCoords);
 }
                                 );

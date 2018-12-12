@@ -135,6 +135,7 @@ struct forceField_functor {
 		float2 xzpos = make_float2(pos.x, pos.z);
 		float2 center = make_float2(0.0f, 0.0f);
 		float dist = length(xzpos - center);
+
 		if (pos.y < 0.5f & dist < 0.1f)
 		{
 			vel += up;

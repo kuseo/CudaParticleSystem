@@ -87,6 +87,7 @@
     <CudaCompile Include="particleSystem_cuda.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Bitmap.h" />
     <ClInclude Include="exception.h" />
     <ClInclude Include="gl_helper.h" />
     <ClInclude Include="helper_cuda.h" />
@@ -104,8 +105,10 @@
     <ClInclude Include="particles_kernel_impl.cuh" />
     <ClInclude Include="render_particles.h" />
     <ClInclude Include="shaders.h" />
+    <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Bitmap.cpp" />
     <ClCompile Include="particles.cpp" />
     <ClCompile Include="particleSystem.cpp" />
     <ClCompile Include="render_particles.cpp" />

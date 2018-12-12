@@ -22,6 +22,8 @@
 #include "render_particles.h"
 #include "shaders.h"
 
+#include "Bitmap.h"
+
 #ifndef M_PI
 #define M_PI    3.1415926535897932384626433832795
 #endif
@@ -36,6 +38,8 @@ ParticleRenderer::ParticleRenderer()
       m_colorVBO(0)
 {
     _initGL();
+	initTexture();
+	initSkyBox();
 }
 
 ParticleRenderer::~ParticleRenderer()
@@ -106,11 +110,13 @@ void ParticleRenderer::display(DisplayMode mode /* = PARTICLE_POINTS */)
         case PARTICLE_SPHERES:
             glEnable(GL_POINT_SPRITE_ARB);
             glTexEnvi(GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, GL_TRUE);
+			glPointParameteri(GL_POINT_SPRITE_COORD_ORIGIN, GL_LOWER_LEFT);
             glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
             glDepthMask(GL_TRUE);
             glEnable(GL_DEPTH_TEST);
 
             glUseProgram(m_program);
+			glBindTexture(GL_TEXTURE_2D, textureID);
             glUniform1f(glGetUniformLocation(m_program, "pointScale"), m_window_h / tanf(m_fov*0.5f*(float)M_PI/180.0f));
             glUniform1f(glGetUniformLocation(m_program, "pointRadius"), m_particleRadius);
 
@@ -118,10 +124,12 @@ void ParticleRenderer::display(DisplayMode mode /* = PARTICLE_POINTS */)
             _drawPoints();
 
             glUseProgram(0);
+			glBindTexture(GL_TEXTURE_2D, 0);
             glDisable(GL_POINT_SPRITE_ARB);
             break;
     }
 }
+
 
 GLuint
 ParticleRenderer::_compileProgram(const char *vsource, const char *fsource)
@@ -161,9 +169,63 @@ ParticleRenderer::_compileProgram(const char *vsource, const char *fsource)
 void ParticleRenderer::_initGL()
 {
     m_program = _compileProgram(vertexShader, spherePixelShader);
+	skybox_program = _compileProgram(skyBoxVertexShader, skyBoxPixelShader);
+}
 
-#if !defined(__APPLE__) && !defined(MACOSX)
-    glClampColorARB(GL_CLAMP_VERTEX_COLOR_ARB, GL_FALSE);
-    glClampColorARB(GL_CLAMP_FRAGMENT_COLOR_ARB, GL_FALSE);
-#endif
+/***********
+* new code *
+************/
+void ParticleRenderer::initTexture()
+{
+	glActiveTexture(GL_TEXTURE0);
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	const char path[] = "textures/ball1.jpg";
+	int n = sizeof(path) / sizeof(*path);
+	char* filePath = (char*)malloc(n * sizeof(char));
+	strcpy(filePath, path);
+	Bitmap bmp = Bitmap::bitmapFromFile(filePath);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bmp.width(), bmp.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bmp.pixelBuffer());
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glUniform1i(glGetUniformLocation(m_program, "tex"), 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void ParticleRenderer::initSkyBox()
+{
+	glActiveTexture(GL_TEXTURE1);
+	glGenTextures(1, &skyboxID);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxID);
+
+	Bitmap bmp = Bitmap::bitmapFromFile("textures/cubemap1.jpg");
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 0, 0, GL_RGB, bmp.width(), bmp.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bmp.pixelBuffer());
+
+	bmp = Bitmap::bitmapFromFile("textures/cubemap2.jpg");
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 1, 0, GL_RGB, bmp.width(), bmp.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bmp.pixelBuffer());
+
+	bmp = Bitmap::bitmapFromFile("textures/cubemap3.jpg");
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 2, 0, GL_RGB, bmp.width(), bmp.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bmp.pixelBuffer());
+
+	bmp = Bitmap::bitmapFromFile("textures/cubemap4.jpg");
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 3, 0, GL_RGB, bmp.width(), bmp.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bmp.pixelBuffer());
+
+	bmp = Bitmap::bitmapFromFile("textures/cubemap5.jpg");
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 4, 0, GL_RGB, bmp.width(), bmp.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bmp.pixelBuffer());
+
+	bmp = Bitmap::bitmapFromFile("textures/cubemap6.jpg");
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 5, 0, GL_RGB, bmp.width(), bmp.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bmp.pixelBuffer());
+
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
