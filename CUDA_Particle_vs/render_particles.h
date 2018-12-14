@@ -24,6 +24,7 @@ class ParticleRenderer
         {
             m_colorVBO = vbo;
         }
+		void SkyBoxDataTransfer();
 
         enum DisplayMode
         {
@@ -34,7 +35,7 @@ class ParticleRenderer
 
         void display(DisplayMode mode = PARTICLE_POINTS);
         void displayGrid();
-
+		void displaySkyBox(float *view, float *projection);
 
         void setPointSize(float size)
         {
@@ -58,11 +59,9 @@ class ParticleRenderer
         void _initGL();
         void _drawPoints();
         GLuint _compileProgram(const char *vsource, const char *fsource);
-		/***********
-		* new code *
-		************/
+
 		void initTexture();
-		void initSkyBox();
+		void initSkyBoxTexture();
 
     protected: // data
         float *m_pos;
@@ -73,11 +72,59 @@ class ParticleRenderer
         float m_fov;
         int m_window_w, m_window_h;
 
+		float skyboxVertices[108] = {
+			// positions          
+			-1.0f,  1.0f, -1.0f,
+			-1.0f, -1.0f, -1.0f,
+			1.0f, -1.0f, -1.0f,
+			1.0f, -1.0f, -1.0f,
+			1.0f,  1.0f, -1.0f,
+			-1.0f,  1.0f, -1.0f,
+
+			-1.0f, -1.0f,  1.0f,
+			-1.0f, -1.0f, -1.0f,
+			-1.0f,  1.0f, -1.0f,
+			-1.0f,  1.0f, -1.0f,
+			-1.0f,  1.0f,  1.0f,
+			-1.0f, -1.0f,  1.0f,
+
+			1.0f, -1.0f, -1.0f,
+			1.0f, -1.0f,  1.0f,
+			1.0f,  1.0f,  1.0f,
+			1.0f,  1.0f,  1.0f,
+			1.0f,  1.0f, -1.0f,
+			1.0f, -1.0f, -1.0f,
+
+			-1.0f, -1.0f,  1.0f,
+			-1.0f,  1.0f,  1.0f,
+			1.0f,  1.0f,  1.0f,
+			1.0f,  1.0f,  1.0f,
+			1.0f, -1.0f,  1.0f,
+			-1.0f, -1.0f,  1.0f,
+
+			-1.0f,  1.0f, -1.0f,
+			1.0f,  1.0f, -1.0f,
+			1.0f,  1.0f,  1.0f,
+			1.0f,  1.0f,  1.0f,
+			-1.0f,  1.0f,  1.0f,
+			-1.0f,  1.0f, -1.0f,
+
+			-1.0f, -1.0f, -1.0f,
+			-1.0f, -1.0f,  1.0f,
+			1.0f, -1.0f, -1.0f,
+			1.0f, -1.0f, -1.0f,
+			-1.0f, -1.0f,  1.0f,
+			1.0f, -1.0f,  1.0f
+		};
+
         GLuint m_program;
 		GLuint skybox_program;
 
         GLuint m_vbo;
         GLuint m_colorVBO;
+		GLuint skybox_vbo;
+		GLuint skybox_vao;
+		
 		GLuint textureID;
 		GLuint skyboxID;
 };

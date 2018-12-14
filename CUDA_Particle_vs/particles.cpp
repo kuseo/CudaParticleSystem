@@ -48,7 +48,7 @@
 #define THRESHOLD         0.30f
 
 #define GRID_SIZE       64
-#define NUM_PARTICLES   16384
+#define NUM_PARTICLES   8192
 
 const uint width = 640, height = 480;
 
@@ -100,6 +100,7 @@ StopWatchInterface *timer = NULL;
 ParticleRenderer *renderer = 0;
 
 float modelView[16];
+float projection[16];
 
 ParamListGL *params;
 
@@ -114,6 +115,7 @@ const char *sSDKsample = "CUDA Particles Simulation";
 extern "C" void cudaInit(int argc, char **argv);
 extern "C" void cudaGLInit(int argc, char **argv);
 extern "C" void copyArrayFromDevice(void *host, const void *device, unsigned int vbo, int size);
+
 
 // initialize particle system
 void initParticleSystem(int numParticles, uint3 gridSize, bool bUseOpenGL)
@@ -268,7 +270,17 @@ void display()
     glRotatef(camera_rot_lag[0], 1.0, 0.0, 0.0);
     glRotatef(camera_rot_lag[1], 0.0, 1.0, 0.0);
 
-    glGetFloatv(GL_MODELVIEW_MATRIX, modelView);
+	
+
+	float view[16];
+	float projection[16];
+
+	glGetFloatv(GL_MODELVIEW_MATRIX, modelView);
+	glGetFloatv(GL_PROJECTION_MATRIX, projection);
+
+	memcpy(view, modelView, sizeof(modelView));
+	view[3] = view[7] = view[11] = view[12] = view[13] = view[14] = view[15] = 0.0f; // remove translation from the view matrix
+	renderer->displaySkyBox(view, projection);
 
     // cube
     glColor3f(1.0, 1.0, 1.0);
@@ -284,7 +296,7 @@ void display()
 
     if (renderer && displayEnabled)
     {
-        renderer->display(displayMode);
+        renderer->display(displayMode); //object shader
     }
 
     if (displaySliders)
@@ -296,6 +308,8 @@ void display()
         glDisable(GL_BLEND);
         glEnable(GL_DEPTH_TEST);
     }
+	
+	
 
     sdkStopTimer(&timer);
 
@@ -338,6 +352,8 @@ void reshape(int w, int h)
         renderer->setWindowSize(w, h);
         renderer->setFOV(60.0);
     }
+
+	//glGetFloatv(GL_PROJECTION_MATRIX, projection);
 }
 
 void mouse(int button, int state, int x, int y)

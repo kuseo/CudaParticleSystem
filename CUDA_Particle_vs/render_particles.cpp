@@ -39,7 +39,8 @@ ParticleRenderer::ParticleRenderer()
 {
     _initGL();
 	initTexture();
-	initSkyBox();
+	initSkyBoxTexture();
+	SkyBoxDataTransfer();
 }
 
 ParticleRenderer::~ParticleRenderer()
@@ -58,6 +59,18 @@ void ParticleRenderer::setVertexBuffer(unsigned int vbo, int numParticles)
     m_vbo = vbo;
     m_numParticles = numParticles;
 }
+
+void ParticleRenderer::SkyBoxDataTransfer()
+{
+	glGenVertexArrays(1, &skybox_vao);
+	glGenBuffers(1, &skybox_vbo);
+	glBindVertexArray(skybox_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, skybox_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(glGetAttribLocation(skybox_program, "aPos"));
+	glVertexAttribPointer(glGetAttribLocation(skybox_program, "aPos"), 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+}
+
 
 void ParticleRenderer::_drawPoints()
 {
@@ -116,9 +129,13 @@ void ParticleRenderer::display(DisplayMode mode /* = PARTICLE_POINTS */)
             glEnable(GL_DEPTH_TEST);
 
             glUseProgram(m_program);
+
+			glActiveTexture(GL_TEXTURE0);
+
+			glUniform1f(glGetUniformLocation(m_program, "pointScale"), m_window_h / tanf(m_fov*0.5f*(float)M_PI / 180.0f));
+			glUniform1f(glGetUniformLocation(m_program, "pointRadius"), m_particleRadius);
+
 			glBindTexture(GL_TEXTURE_2D, textureID);
-            glUniform1f(glGetUniformLocation(m_program, "pointScale"), m_window_h / tanf(m_fov*0.5f*(float)M_PI/180.0f));
-            glUniform1f(glGetUniformLocation(m_program, "pointRadius"), m_particleRadius);
 
             glColor3f(1, 1, 1);
             _drawPoints();
@@ -128,6 +145,27 @@ void ParticleRenderer::display(DisplayMode mode /* = PARTICLE_POINTS */)
             glDisable(GL_POINT_SPRITE_ARB);
             break;
     }
+}
+
+void ParticleRenderer::displaySkyBox(float * view, float * projection)
+{
+	glDepthFunc(GL_LEQUAL);
+
+	glUseProgram(skybox_program);
+
+	glActiveTexture(GL_TEXTURE0);
+
+	glUniformMatrix4fv(glGetUniformLocation(skybox_program, "view"), 1, GL_FALSE, view);
+	glUniformMatrix4fv(glGetUniformLocation(skybox_program, "projection"), 1, GL_FALSE, projection);
+
+	glBindVertexArray(skybox_vao);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxID);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glUseProgram(0);
+
+	glBindVertexArray(0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+	glDepthFunc(GL_LESS);
 }
 
 
@@ -172,12 +210,8 @@ void ParticleRenderer::_initGL()
 	skybox_program = _compileProgram(skyBoxVertexShader, skyBoxPixelShader);
 }
 
-/***********
-* new code *
-************/
 void ParticleRenderer::initTexture()
 {
-	glActiveTexture(GL_TEXTURE0);
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 	const char path[] = "textures/ball1.jpg";
@@ -191,33 +225,58 @@ void ParticleRenderer::initTexture()
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	glUniform1i(glGetUniformLocation(m_program, "tex"), 0);
+
 	glBindTexture(GL_TEXTURE_2D, 0);
+
+	//glUniform1i(glGetUniformLocation(m_program, "tex"), 0);
 }
 
-void ParticleRenderer::initSkyBox()
+void ParticleRenderer::initSkyBoxTexture()
 {
-	glActiveTexture(GL_TEXTURE1);
 	glGenTextures(1, &skyboxID);
 
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxID);
 
-	Bitmap bmp = Bitmap::bitmapFromFile("textures/cubemap1.jpg");
+	const char path0[] = "textures/cubemap1.jpg";
+	int n = sizeof(path0) / sizeof(*path0);
+	char* filePath = (char*)malloc(n * sizeof(char));
+	strcpy(filePath, path0);
+	Bitmap bmp = Bitmap::bitmapFromFile(filePath);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 0, 0, GL_RGB, bmp.width(), bmp.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bmp.pixelBuffer());
 
-	bmp = Bitmap::bitmapFromFile("textures/cubemap2.jpg");
+	const char path1[] = "textures/cubemap2.jpg";
+	n = sizeof(path1) / sizeof(*path1);
+	filePath = (char*)malloc(n * sizeof(char));
+	strcpy(filePath, path1);
+	bmp = Bitmap::bitmapFromFile(filePath);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 1, 0, GL_RGB, bmp.width(), bmp.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bmp.pixelBuffer());
 
-	bmp = Bitmap::bitmapFromFile("textures/cubemap3.jpg");
+	const char path2[] = "textures/cubemap3.jpg";
+	n = sizeof(path2) / sizeof(*path2);
+	filePath = (char*)malloc(n * sizeof(char));
+	strcpy(filePath, path2);
+	bmp = Bitmap::bitmapFromFile(filePath);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 2, 0, GL_RGB, bmp.width(), bmp.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bmp.pixelBuffer());
 
-	bmp = Bitmap::bitmapFromFile("textures/cubemap4.jpg");
+	const char path3[] = "textures/cubemap4.jpg";
+	n = sizeof(path3) / sizeof(*path3);
+	filePath = (char*)malloc(n * sizeof(char));
+	strcpy(filePath, path3);
+	bmp = Bitmap::bitmapFromFile(filePath);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 3, 0, GL_RGB, bmp.width(), bmp.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bmp.pixelBuffer());
 
-	bmp = Bitmap::bitmapFromFile("textures/cubemap5.jpg");
+	const char path4[] = "textures/cubemap5.jpg";
+	n = sizeof(path4) / sizeof(*path4);
+	filePath = (char*)malloc(n * sizeof(char));
+	strcpy(filePath, path4);
+	bmp = Bitmap::bitmapFromFile(filePath);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 4, 0, GL_RGB, bmp.width(), bmp.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bmp.pixelBuffer());
 
-	bmp = Bitmap::bitmapFromFile("textures/cubemap6.jpg");
+	const char path5[] = "textures/cubemap6.jpg";
+	n = sizeof(path5) / sizeof(*path5);
+	filePath = (char*)malloc(n * sizeof(char));
+	strcpy(filePath, path5);
+	bmp = Bitmap::bitmapFromFile(filePath);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + 5, 0, GL_RGB, bmp.width(), bmp.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bmp.pixelBuffer());
 
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -228,4 +287,6 @@ void ParticleRenderer::initSkyBox()
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	//glUniform1i(glGetUniformLocation(skybox_program, "skybox"), 0);
 }

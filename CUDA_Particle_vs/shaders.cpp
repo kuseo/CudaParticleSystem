@@ -54,21 +54,19 @@ void main()
 	// calculate lighting
 	float diffuse = max(0.0, dot(lightDir, N));
 
+	//gl_FragColor = gl_Color * diffuse;
 	gl_FragColor = vec4(color * diffuse, 1.0f);
 }
 );
 
-
-
 // vertex shader for skybox
 const char *skyBoxVertexShader = STRINGIFY(
-	layout(location = 0) in vec3 aPos;
-
-	out vec3 TexCoords;
-
+	attribute vec3 aPos;
+	varying vec3 TexCoords;
 	uniform mat4 projection;
 	uniform mat4 view;
-                               void main()
+
+void main()
 {
 	TexCoords = aPos;
 	vec4 pos = projection * view * vec4(aPos, 1.0);
@@ -78,13 +76,10 @@ const char *skyBoxVertexShader = STRINGIFY(
 
 // pixel shader for skybox
 const char *skyBoxPixelShader = STRINGIFY(
-                                    void main()
-	out vec4 FragColor;
-
-	in vec3 TexCoords;
-
+	varying vec3 TexCoords;
 	uniform samplerCube skybox;
+void main()
 {
-	FragColor = texture(skybox, TexCoords);
+	gl_FragColor = texture(skybox, TexCoords);
 }
-                                );
+);
