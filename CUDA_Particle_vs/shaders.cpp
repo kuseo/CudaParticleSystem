@@ -59,6 +59,49 @@ void main()
 }
 );
 
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+//vertex shader for object in skybox
+const char *skyBoxObjectVertexShader = STRINGIFY(
+	varying vec3 Normal;
+	varying vec3 Position;
+
+	uniform mat4 model;
+	void main()
+{
+	Normal = normalize(gl_NormalMatrix*gl_Normal);
+	Position = vec3(model * gl_Vertex); //This Position output of the vertex shader is used to calculate the view direction vector in the fragment shader.
+
+	gl_Position = gl_ModelViewProjectionMatrix * vec4(gl_Vertex.xyz, 1.0);
+}
+);
+
+// pixel shader for object in skybox
+const char *skyBoxObjectPixelShader = STRINGIFY(
+	varying vec3 Normal;
+	varying vec3 Position;
+
+	uniform samplerCube skybox;
+	void main()
+{
+	vec3 I = normalize(Position);
+
+	vec3 reflectRay = reflect(I, normalize(Normal));
+	vec3 refractRay = refract(I, normalize(Normal), 0.65);
+	gl_FragColor = texture(skybox, reflectRay);
+}
+);
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+
+
 // vertex shader for skybox
 const char *skyBoxVertexShader = STRINGIFY(
 	attribute vec3 aPos;
@@ -66,7 +109,7 @@ const char *skyBoxVertexShader = STRINGIFY(
 	uniform mat4 projection;
 	uniform mat4 view;
 
-void main()
+	void main()
 {
 	TexCoords = aPos;
 	vec4 pos = projection * view * vec4(aPos, 1.0);
@@ -78,7 +121,7 @@ void main()
 const char *skyBoxPixelShader = STRINGIFY(
 	varying vec3 TexCoords;
 	uniform samplerCube skybox;
-void main()
+	void main()
 {
 	gl_FragColor = texture(skybox, TexCoords);
 }

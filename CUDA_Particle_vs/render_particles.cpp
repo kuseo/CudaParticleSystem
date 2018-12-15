@@ -147,6 +147,41 @@ void ParticleRenderer::display(DisplayMode mode /* = PARTICLE_POINTS */)
     }
 }
 
+void ParticleRenderer::displaySpheres(float * model)
+{
+	int k = 0;
+	float *pos;
+	GLUquadricObj *qobj = gluNewQuadric();
+	gluQuadricOrientation(qobj, GLU_OUTSIDE);
+	gluQuadricNormals(qobj, GLU_SMOOTH);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+	pos = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
+	
+	
+	glUseProgram(skyboxObject_program);
+
+	glActiveTexture(GL_TEXTURE0);
+
+	glUniformMatrix4fv(glGetUniformLocation(skyboxObject_program, "model"), 1, GL_FALSE, model);
+
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxID);
+
+	for (int i = 0; i < m_numParticles; ++i)
+	{
+		glPushMatrix();
+		glTranslatef(pos[k], pos[k + 1], pos[k + 2]);
+		gluSphere(qobj, m_particleRadius, 30, 30);
+		k += 4;
+		glPopMatrix();
+	}
+	glUseProgram(0);
+
+	glUnmapBuffer(GL_ARRAY_BUFFER);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+}
+
 void ParticleRenderer::displaySkyBox(float * view, float * projection)
 {
 	glDepthFunc(GL_LEQUAL);
@@ -207,6 +242,7 @@ ParticleRenderer::_compileProgram(const char *vsource, const char *fsource)
 void ParticleRenderer::_initGL()
 {
     m_program = _compileProgram(vertexShader, spherePixelShader);
+	skyboxObject_program = _compileProgram(skyBoxObjectVertexShader, skyBoxObjectPixelShader);
 	skybox_program = _compileProgram(skyBoxVertexShader, skyBoxPixelShader);
 }
 

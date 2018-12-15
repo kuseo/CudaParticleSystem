@@ -35,6 +35,7 @@ class ParticleRenderer
 
         void display(DisplayMode mode = PARTICLE_POINTS);
         void displayGrid();
+		void displaySpheres(float * model);
 		void displaySkyBox(float *view, float *projection);
 
         void setPointSize(float size)
@@ -118,6 +119,8 @@ class ParticleRenderer
 		};
 
         GLuint m_program;
+
+		GLuint skyboxObject_program;
 		GLuint skybox_program;
 
         GLuint m_vbo;

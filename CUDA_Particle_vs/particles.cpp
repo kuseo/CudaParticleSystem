@@ -48,7 +48,7 @@
 #define THRESHOLD         0.30f
 
 #define GRID_SIZE       64
-#define NUM_PARTICLES   8192
+#define NUM_PARTICLES   4096
 
 const uint width = 640, height = 480;
 
@@ -271,15 +271,19 @@ void display()
     glRotatef(camera_rot_lag[1], 0.0, 1.0, 0.0);
 
 	
-
+	float model[16];
 	float view[16];
 	float projection[16];
 
 	glGetFloatv(GL_MODELVIEW_MATRIX, modelView);
 	glGetFloatv(GL_PROJECTION_MATRIX, projection);
 
+	memcpy(model, modelView, sizeof(modelView));
+	model[0] = model[1] = model[2] = model[4] = model[5] = model[6] = model[8] = model[9] = model[10] = 0.0f; // remove view matrix from the modelview matrix (remove bottom right parts)
+
 	memcpy(view, modelView, sizeof(modelView));
-	view[3] = view[7] = view[11] = view[12] = view[13] = view[14] = view[15] = 0.0f; // remove translation from the view matrix
+	view[3] = view[7] = view[11] = view[12] = view[13] = view[14] = view[15] = 0.0f; // remove model matrix from the modelview matrix (take upper left 3x3 matrix)
+
 	renderer->displaySkyBox(view, projection);
 
     // cube
@@ -296,7 +300,8 @@ void display()
 
     if (renderer && displayEnabled)
     {
-        renderer->display(displayMode); //object shader
+		//renderer->display(displayMode); //object shader
+		renderer->displaySpheres(model);
     }
 
     if (displaySliders)
