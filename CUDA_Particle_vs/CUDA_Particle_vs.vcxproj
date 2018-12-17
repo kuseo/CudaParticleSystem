@@ -111,6 +111,7 @@
     <ClCompile Include="Bitmap.cpp" />
     <ClCompile Include="particles.cpp" />
     <ClCompile Include="particleSystem.cpp" />
+    <ClCompile Include="rayTracer.cu" />
     <ClCompile Include="render_particles.cpp" />
     <ClCompile Include="shaders.cpp" />
   </ItemGroup>

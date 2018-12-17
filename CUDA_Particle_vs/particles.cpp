@@ -48,7 +48,7 @@
 #define THRESHOLD         0.30f
 
 #define GRID_SIZE       64
-#define NUM_PARTICLES   4096
+#define NUM_PARTICLES   2048
 
 const uint width = 640, height = 480;
 
@@ -61,6 +61,9 @@ float camera_trans_lag[] = {0, 0, -3};
 float camera_rot_lag[] = {0, 0, 0};
 const float inertia = 0.1f;
 ParticleRenderer::DisplayMode displayMode = ParticleRenderer::PARTICLE_SPHERES;
+
+bool raytracer = false;
+float radius;
 
 int mode = 0;
 bool displayEnabled = true;
@@ -128,6 +131,7 @@ void initParticleSystem(int numParticles, uint3 gridSize, bool bUseOpenGL)
         renderer = new ParticleRenderer;
         renderer->setParticleRadius(psystem->getParticleRadius());
         renderer->setColorBuffer(psystem->getColorBuffer());
+		radius = psystem->getParticleRadius();
     }
 
     sdkCreateTimer(&timer);
@@ -273,7 +277,6 @@ void display()
 	
 	float model[16];
 	float view[16];
-	float projection[16];
 
 	glGetFloatv(GL_MODELVIEW_MATRIX, modelView);
 	glGetFloatv(GL_PROJECTION_MATRIX, projection);
@@ -301,7 +304,7 @@ void display()
     if (renderer && displayEnabled)
     {
 		//renderer->display(displayMode); //object shader
-		renderer->displaySpheres(model);
+		renderer->displaySpheres(model); //skybox shader
     }
 
     if (displaySliders)
@@ -322,6 +325,106 @@ void display()
     glutReportErrors();
 
     computeFPS();
+}
+
+void displayRayTracing()
+{
+	sdkStartTimer(&timer);
+
+	float *_pos;
+	float *pos;
+
+	// update the simulation
+	if (!bPause)
+	{
+		psystem->setIterations(iterations);
+		psystem->setDamping(damping);
+		psystem->setGravity(-gravity);
+		psystem->setCollideSpring(collideSpring);
+		psystem->setCollideDamping(collideDamping);
+		psystem->setCollideShear(collideShear);
+		psystem->setCollideAttraction(collideAttraction);
+
+		psystem->update(timestep);
+
+		//read the buffer
+		glBindBuffer(GL_ARRAY_BUFFER, psystem->getCurrentReadBuffer());
+		_pos = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
+		pos = (float*)malloc(4 * sizeof(float) *  psystem->getNumParticles());
+		memcpy(pos, _pos, sizeof(pos));
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		//now we have particle's xyzh data in pos array 
+	}
+
+	// render
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// view transform
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	for (int c = 0; c < 3; ++c)
+	{
+		camera_trans_lag[c] += (camera_trans[c] - camera_trans_lag[c]) * inertia;
+		camera_rot_lag[c] += (camera_rot[c] - camera_rot_lag[c]) * inertia;
+	}
+
+	
+
+
+
+
+	//1) create objects
+
+
+	//2) set lookAt
+	/*
+	glTranslatef(camera_trans_lag[0], camera_trans_lag[1], camera_trans_lag[2]);
+	glRotatef(camera_rot_lag[0], 1.0, 0.0, 0.0);
+	glRotatef(camera_rot_lag[1], 0.0, 1.0, 0.0);
+	*/
+
+
+	//3) ray tracing process
+
+
+	//4) draw
+
+
+	float model[16];
+	float view[16];
+
+	glGetFloatv(GL_MODELVIEW_MATRIX, modelView);
+	glGetFloatv(GL_PROJECTION_MATRIX, projection);
+
+
+
+
+	/*
+	code here
+	*/
+
+
+
+	if (displaySliders)
+	{
+		glDisable(GL_DEPTH_TEST);
+		glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO); // invert color
+		glEnable(GL_BLEND);
+		params->Render(0, 0);
+		glDisable(GL_BLEND);
+		glEnable(GL_DEPTH_TEST);
+	}
+
+
+
+	sdkStopTimer(&timer);
+
+	glutSwapBuffers();
+	glutReportErrors();
+
+	computeFPS();
 }
 
 inline float frand()
