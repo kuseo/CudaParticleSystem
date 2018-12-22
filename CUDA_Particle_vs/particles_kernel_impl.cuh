@@ -76,13 +76,11 @@ struct integrate_functor
             vel.x *= params.boundaryDamping;
         }
 
-		/*
 		if (pos.y > 1.0f - params.particleRadius)
         {
             pos.y = 1.0f - params.particleRadius;
             vel.y *= params.boundaryDamping;
         }
-		*/
         
 
         if (pos.z > 1.0f - params.particleRadius)
@@ -116,10 +114,37 @@ struct integrate_functor
 * new code *
 ************/
 // calculate potential force in given position
-struct forceField_functor {
+__device__ bool innerCircle(float2 pos)
+{
+	float mag = length(pos);
+	if (mag < 0.08f)
+		return true;
+	return false;
+}
 
+__device__ bool innerCylinder(float3 pos)
+{
+	if (pos.y < 0.0f)
+	{
+		float2 _pos = make_float2(pos.x, pos.z);
+		if (innerCircle(_pos))
+			return true;
+	}
+	return false;
+}
+
+__device__ bool innerSphere(float3 pos)
+{
+	float dist = length(pos);
+	if (dist < 0.1f)
+		return true;
+	return false;
+}
+
+struct forceField_functor {
+	int count;
 	__host__ __device__
-	forceField_functor() {}
+	forceField_functor(int count) : count(count) {}
 
 	template <typename Tuple>
 	__device__
@@ -129,16 +154,26 @@ struct forceField_functor {
 		volatile float4 velData = thrust::get<1>(t);
 		float3 pos = make_float3(posData.x, posData.y, posData.z);
 		float3 vel = make_float3(velData.x, velData.y, velData.z);
-
+		
 		// apply force in given position
-		float3 up = make_float3(0.0f, 0.0008f, 0.0f);
-		float2 xzpos = make_float2(pos.x, pos.z);
-		float2 center = make_float2(0.0f, 0.0f);
-		float dist = length(xzpos - center);
-
-		if (pos.y < 0.5f & dist < 0.1f)
+		if (innerCylinder(pos))
 		{
+			float3 up = make_float3(0.0f, 0.00035f, 0.0f);
 			vel += up;
+		}
+
+		else if (innerSphere(pos))
+		{
+			float3 v = -normalize(pos);
+			vel = 0.003f * v;
+
+			float dist = length(pos);
+			if (count >= 500)
+			{
+				v = -v;
+				vel = 0.01 * (1/dist) * v;
+			}
+			
 		}
 
 		// store new position and velocity
@@ -381,36 +416,6 @@ void collideD(float4 *newVel,               // output: new velocity
     // write new velocity back to original unsorted location
     uint originalIndex = gridParticleIndex[index];
     newVel[originalIndex] = make_float4(vel + force, 0.0f);
-}
-
-
-
-__global__
-void forceFieldD(float4 *newVel,               // output: new velocity
-				 float4 *oldPos,               // input: sorted positions
-				 float4 *oldVel,               // input: sorted velocities
-				 uint   *gridParticleIndex,
-				 uint    numParticles)
-{
-	uint index = __mul24(blockIdx.x, blockDim.x) + threadIdx.x;
-
-	if (index >= numParticles) return;
-
-	// read particle data from sorted arrays
-	float3 pos = make_float3(FETCH(oldPos, index));
-	float3 vel = make_float3(FETCH(oldVel, index));
-
-	// examine neighbouring cells
-	float3 force = make_float3(0.0f);
-
-	// apply force field
-	//force += function_that_returns_force_at_given_position(pos);
-	float3 temp = make_float3(0.0f, 0.0006f, 0.0f);
-	force += temp;
-
-	// write new velocity back to original unsorted location
-	uint originalIndex = gridParticleIndex[index];
-	//newVel[originalIndex] = make_float4(vel + force, 0.0f);
 }
 
 #endif

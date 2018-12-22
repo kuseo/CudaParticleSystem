@@ -23,6 +23,7 @@
 class ParticleSystem
 {
     public:
+
         ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenGL);
         ~ParticleSystem();
 
@@ -40,6 +41,7 @@ class ParticleSystem
         };
 
         void update(float deltaTime);
+
         void reset(ParticleConfig config);
 
         float *getArray(ParticleArray array);
@@ -187,6 +189,8 @@ class ParticleSystem
         StopWatchInterface *m_timer;
 
         uint m_solverIterations;
+		int count;
+
 };
 
 #endif // __PARTICLESYSTEM_H__

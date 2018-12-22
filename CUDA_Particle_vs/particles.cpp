@@ -44,13 +44,16 @@
 #include "render_particles.h"
 #include "paramgl.h"
 
+//#include "rayTracing.cuh"
 #define MAX_EPSILON_ERROR 5.00f
 #define THRESHOLD         0.30f
 
 #define GRID_SIZE       64
-#define NUM_PARTICLES   2048
+#define NUM_PARTICLES   16384
 
 const uint width = 640, height = 480;
+
+bool skybox = false;
 
 // view params
 int ox, oy;
@@ -104,6 +107,7 @@ ParticleRenderer *renderer = 0;
 
 float modelView[16];
 float projection[16];
+int viewPort[4];
 
 ParamListGL *params;
 
@@ -118,6 +122,34 @@ const char *sSDKsample = "CUDA Particles Simulation";
 extern "C" void cudaInit(int argc, char **argv);
 extern "C" void cudaGLInit(int argc, char **argv);
 extern "C" void copyArrayFromDevice(void *host, const void *device, unsigned int vbo, int size);
+
+float bunny[2503];
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//RAY TRACING
+/*
+cudaGraphicsResource *resource;
+
+GLuint pbo;
+GLuint rayTracingTex;
+
+void initRayTracer()
+{
+	// set pbo
+	glGenBuffersARB(1, &rayTracingTex);
+	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, rayTracingTex);
+	glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, width * height * 4, NULL, GL_DYNAMIC_DRAW_ARB);
+
+	// set device handle
+	checkCudaErrors(cudaGraphicsGLRegisterBuffer(&resource, rayTracingTex, cudaGraphicsMapFlagsNone));
+}
+*/
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 // initialize particle system
@@ -215,6 +247,11 @@ void runBenchmark(int iterations, char *exec_path)
     }
 }
 
+float start = 0;
+float end = 0;
+float delta1 = 0;
+float delta2 = 0;
+
 void computeFPS()
 {
     frameCount++;
@@ -224,7 +261,7 @@ void computeFPS()
     {
         char fps[256];
         float ifps = 1.f / (sdkGetAverageTimerValue(&timer) / 1000.f);
-        sprintf(fps, "CUDA Particles (%d particles): %3.1f fps", numParticles, ifps);
+        sprintf(fps, "(%d particles: %3.1f fps) (Sim time : %3.0f ms) (Rendering time : %3.0f ms)", numParticles, ifps, delta1, delta2);
 
         glutSetWindowTitle(fps);
         fpsCount = 0;
@@ -233,6 +270,7 @@ void computeFPS()
         sdkResetTimer(&timer);
     }
 }
+
 
 void display()
 {
@@ -249,7 +287,13 @@ void display()
         psystem->setCollideShear(collideShear);
         psystem->setCollideAttraction(collideAttraction);
 
+		////////////////////////////////////////////////////////////////////
+		/* simulation */
+		start = clock();
         psystem->update(timestep);
+		end = clock();
+		delta1= end - start;
+		////////////////////////////////////////////////////////////////////
 
         if (renderer)
         {
@@ -301,11 +345,18 @@ void display()
     glutSolidSphere(psystem->getColliderRadius(), 20, 10);
     glPopMatrix();
 
+
+	////////////////////////////////////////////////////////////////////
+	/* Rendering */
+	start = clock();
     if (renderer && displayEnabled)
     {
-		//renderer->display(displayMode); //object shader
-		renderer->displaySpheres(model); //skybox shader
+		skybox ? renderer->displaySpheres(model) : renderer->display(displayMode);
     }
+	end = clock();
+	delta2 = end - start;
+	////////////////////////////////////////////////////////////////////
+
 
     if (displaySliders)
     {
@@ -326,7 +377,7 @@ void display()
 
     computeFPS();
 }
-
+/*
 void displayRayTracing()
 {
 	sdkStartTimer(&timer);
@@ -379,11 +430,10 @@ void displayRayTracing()
 
 
 	//2) set lookAt
-	/*
 	glTranslatef(camera_trans_lag[0], camera_trans_lag[1], camera_trans_lag[2]);
 	glRotatef(camera_rot_lag[0], 1.0, 0.0, 0.0);
 	glRotatef(camera_rot_lag[1], 0.0, 1.0, 0.0);
-	*/
+	
 
 
 	//3) ray tracing process
@@ -392,18 +442,29 @@ void displayRayTracing()
 	//4) draw
 
 
-	float model[16];
-	float view[16];
-
 	glGetFloatv(GL_MODELVIEW_MATRIX, modelView);
 	glGetFloatv(GL_PROJECTION_MATRIX, projection);
+	glGetIntegerv(GL_VIEWPORT, viewPort);
 
 
 
+	
+	//reset the lookat
+	glTranslatef(-camera_trans_lag[0], -camera_trans_lag[1], -camera_trans_lag[2]);
+	glRotatef(-camera_rot_lag[0], 1.0, 0.0, 0.0);
+	glRotatef(-camera_rot_lag[1], 0.0, 1.0, 0.0);
 
-	/*
-	code here
-	*/
+	// map device memory with resource
+	uchar4 *devPtr;
+	size_t size;
+	checkCudaErrors(cudaGraphicsMapResources(1, &resource, NULL));
+
+	lunchRayTracer(devPtr, modelView, projection, viewPort);
+
+	checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&devPtr, &size, resource));
+
+
+	glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
 
 
@@ -417,8 +478,6 @@ void displayRayTracing()
 		glEnable(GL_DEPTH_TEST);
 	}
 
-
-
 	sdkStopTimer(&timer);
 
 	glutSwapBuffers();
@@ -427,6 +486,7 @@ void displayRayTracing()
 	computeFPS();
 }
 
+*/
 inline float frand()
 {
     return rand() / (float) RAND_MAX;
@@ -804,7 +864,10 @@ void initMenus()
 int
 main(int argc, char **argv)
 {
-	
+	int scene;
+	scanf("%d", &scene);
+	if (scene == 1) skybox = false;
+	else skybox = true;
 #if defined(__linux__)
     setenv ("DISPLAY", ":0", 0);
 #endif
@@ -812,8 +875,8 @@ main(int argc, char **argv)
     printf("%s Starting...\n\n", sSDKsample);
 
     printf("NOTE: The CUDA Samples are not meant for performance measurements. Results may vary when GPU Boost is enabled.\n\n");
-
-    numParticles = NUM_PARTICLES;
+	skybox ? numParticles = 4096 : numParticles = NUM_PARTICLES;
+    
     uint gridDim = GRID_SIZE;
     numIterations = 0;
 
@@ -870,7 +933,7 @@ main(int argc, char **argv)
 
     initParticleSystem(numParticles, gridSize, !benchmark && g_refFile==NULL);
     initParams();
-
+	//initRayTracer();
     if (benchmark || g_refFile)
     {
         if (numIterations <= 0)

@@ -34,16 +34,17 @@
 #endif
 
 ParticleSystem::ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenGL) :
-    m_bInitialized(false),
-    m_bUseOpenGL(bUseOpenGL),
-    m_numParticles(numParticles),
-    m_hPos(0),
-    m_hVel(0),
-    m_dPos(0),
-    m_dVel(0),
-    m_gridSize(gridSize),
-    m_timer(NULL),
-    m_solverIterations(1)
+	m_bInitialized(false),
+	m_bUseOpenGL(bUseOpenGL),
+	m_numParticles(numParticles),
+	m_hPos(0),
+	m_hVel(0),
+	m_dPos(0),
+	m_dVel(0),
+	m_gridSize(gridSize),
+	m_timer(NULL),
+	m_solverIterations(1),
+	count(0)
 {
     m_numGridCells = m_gridSize.x*m_gridSize.y*m_gridSize.z;
     //    float3 worldSize = make_float3(2.0f, 2.0f, 2.0f);
@@ -55,7 +56,7 @@ ParticleSystem::ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenG
     m_params.numCells = m_numGridCells;
     m_params.numBodies = m_numParticles;
 
-    m_params.particleRadius = 1.0f / 16.0f;
+    m_params.particleRadius = 1.0f / 64.0f;
 	m_params.colliderPos = make_float3(-1.2f, -0.8f, 0.8f);
     m_params.colliderRadius = 0.2f;
 
@@ -269,12 +270,11 @@ ParticleSystem::update(float deltaTime)
         m_numParticles);
 
 	// calculate potential force
-	/*
 	calcForceField(
 		dPos,
 		m_dVel,
-		m_numParticles);
-	*/
+		m_numParticles,
+		&count);
 	
 
     // calculate grid hash
@@ -467,14 +467,18 @@ ParticleSystem::reset(ParticleConfig config)
 
                 for (uint i=0; i < m_numParticles; i++)
                 {
-                    float point[3];
-                    point[0] = frand();
-                    point[1] = frand();
-                    point[2] = frand();
-                    m_hPos[p++] = 2 * (point[0] - 0.5f);
-                    m_hPos[p++] = 2 * (point[1] - 0.5f);
-                    m_hPos[p++] = 2 * (point[2] - 0.5f);
+					float point[3];
+					point[0] = frand();
+					point[1] = frand();
+					point[2] = frand();
+					m_hPos[p++] = 2 * (point[0] - 0.5f);
+					m_hPos[p++] = 2 * (point[1] - 0.5f);
+					m_hPos[p++] = 2 * (point[2] - 0.5f);
+					
+					
+
                     m_hPos[p++] = 1.0f; // radius
+
                     m_hVel[v++] = 0.0f;
                     m_hVel[v++] = 0.0f;
                     m_hVel[v++] = 0.0f;

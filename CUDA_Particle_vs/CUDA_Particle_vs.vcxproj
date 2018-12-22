@@ -85,6 +85,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="particleSystem_cuda.cu" />
+    <CudaCompile Include="rayTracing.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bitmap.h" />
@@ -97,6 +98,7 @@
     <ClInclude Include="helper_math.h" />
     <ClInclude Include="helper_string.h" />
     <ClInclude Include="helper_timer.h" />
+    <ClInclude Include="matrix.cuh" />
     <ClInclude Include="param.h" />
     <ClInclude Include="paramgl.h" />
     <ClInclude Include="particleSystem.cuh" />
@@ -111,7 +113,6 @@
     <ClCompile Include="Bitmap.cpp" />
     <ClCompile Include="particles.cpp" />
     <ClCompile Include="particleSystem.cpp" />
-    <ClCompile Include="rayTracer.cu" />
     <ClCompile Include="render_particles.cpp" />
     <ClCompile Include="shaders.cpp" />
   </ItemGroup>

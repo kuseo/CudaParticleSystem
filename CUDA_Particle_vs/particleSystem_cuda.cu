@@ -144,15 +144,19 @@ extern "C"
 
 	void calcForceField(float *pos,
 						float *vel,
-						uint  numParticles)
+						uint  numParticles,
+						int * count)
 	{
+		*count += 1;
 		thrust::device_ptr<float4> d_pos4((float4 *)pos);
 		thrust::device_ptr<float4> d_vel4((float4 *)vel);
 
 		thrust::for_each(
 			thrust::make_zip_iterator(thrust::make_tuple(d_pos4, d_vel4)),
 			thrust::make_zip_iterator(thrust::make_tuple(d_pos4 + numParticles, d_vel4 + numParticles)),
-			forceField_functor());
+			forceField_functor(*count));
+		if (*count >= 600)
+			*count = 0;
 	}
 
     void calcHash(uint  *gridParticleHash,

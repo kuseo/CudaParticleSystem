@@ -35,7 +35,8 @@ extern "C"
 
 	void calcForceField(float *pos,
 						float *vel,
-						uint  numParticles);
+						uint  numParticles,
+						int *count);
 
     void calcHash(uint  *gridParticleHash,
                   uint  *gridParticleIndex,
